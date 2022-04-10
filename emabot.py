@@ -1,14 +1,14 @@
-from soupsieve import closest
-import websocket, json, pprint, talib, numpy
+import websocket, json, pprint
 import config
 from binance.client import Client
 from binance.enums import *
 import EMA
 
-SOCKET = "wss://fstream.binance.com/stream?streams=dotusdt@kline_3m/dotusdt@kline_1m"
 
-max_period=9
-TRADE_SYMBOL = 'ETHUSD'
+SOCKET = "wss://stream.binance.com:9443/ws/stream?streams=dotusdt@kline_3m/dotusdt@kline_1m"
+
+
+TRADE_SYMBOL = 'DOTUSDT'
 TRADE_QUANTITY = 0.05
 
 closes = []
@@ -67,8 +67,28 @@ def on_message(ws, message):
         threeema3.append(EMA.ema(closes,3))
         threeema9.append(EMA.ema(closes,9))
 
-        print(oneema3)
-        print(oneema9)
+        
+        if threeema3[-1] > threeema9[-1]:
+
+            if oneema3[-1] > oneema9[-1]:
+                print("Oversold! Buy! Buy! Buy!")
+                # put binance buy order logic here
+                order_succeeded = order(SIDE_BUY, TRADE_QUANTITY, TRADE_SYMBOL)
+                if order_succeeded:
+                    in_position = True
+
+                if oneema3[-1]< oneema9[-1]:
+                    print("Overbought! Sell! Sell! Sell!")
+                    # put binance sell logic here
+                order_succeeded = order(SIDE_SELL, TRADE_QUANTITY, TRADE_SYMBOL)
+                if order_succeeded:
+                    in_position = False
+
+       
+                
+ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
+ws.run_forever()
+   
         
 
     
@@ -78,5 +98,3 @@ def on_message(ws, message):
     
         
                 
-ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message)
-ws.run_forever()
